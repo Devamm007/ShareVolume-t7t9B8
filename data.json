@@ -1,0 +1,11 @@
+{
+  "entityName": "Cardinal Health",
+  "max": {
+    "val": 150000000,
+    "fy": "2022"
+  },
+  "min": {
+    "val": 100000000,
+    "fy": "2021"
+  }
+}
