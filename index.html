@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cardinal Health Shares Volume</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 2em; }
+  h1 { text-align: center; }
+  .data-section { margin-top: 2em; }
+  .label { font-weight: bold; }
+</style>
+</head>
+<body>
+<h1 id="entity-name">Loading...</h1>
+<div class="data-section">
+  <p><span class="label">Maximum Shares Outstanding:</span> <span id="share-max-value">-</span> shares in fiscal year <span id="share-max-fy">-</span></p>
+  <p><span class="label">Minimum Shares Outstanding:</span> <span id="share-min-value">-</span> shares in fiscal year <span id="share-min-fy">-</span></p>
+</div>
+<script>
+const defaultCIK = '0000721371';
+
+function getQueryParam(param) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(param);
+}
+
+async function fetchData(cik) {
+  const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(`https://data.sec.gov/api/xbrl/companyconcept/CIK${cik}/dei/EntityCommonStockSharesOutstanding.json`);
+  try {
+    const response = await fetch(proxyUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MyApp/1.0; +https://example.com)' }
+    });
+    const dataText = await response.json();
+    const data = JSON.parse(dataText.contents);
+    return data;
+  } catch (error) {
+    console.error('Fetch error:', error);
+    return null;
+  }
+}
+
+async function loadData(cik) {
+  const data = await fetchData(cik);
+  if (!data) {
+    document.getElementById('entity-name').textContent = 'Data not available';
+    return;
+  }
+  document.title = data.entityName + ' Shares Volume';
+  document.getElementById('entity-name').textContent = data.entityName;
+
+  const shares = data.units?.shares || [];
+  const filteredShares = shares.filter(s => s.fy > '2020' && !isNaN(s.val));
+  if (filteredShares.length === 0) {
+    document.getElementById('share-max-value').textContent = 'N/A';
+    document.getElementById('share-min-value').textContent = 'N/A';
+    return;
+  }
+
+  const maxShare = filteredShares.reduce((prev, curr) => (curr.val > prev.val ? curr : prev));
+  const minShare = filteredShares.reduce((prev, curr) => (curr.val < prev.val ? curr : prev));
+
+  document.getElementById('share-max-value').textContent = maxShare.val;
+  document.getElementById('share-max-fy').textContent = maxShare.fy;
+  document.getElementById('share-min-value').textContent = minShare.val;
+  document.getElementById('share-min-fy').textContent = minShare.fy;
+}
+
+async function init() {
+  let cik = getQueryParam('CIK') || defaultCIK;
+  await loadData(cik);
+}
+
+init();
+</script>
+</body>
+</html>
